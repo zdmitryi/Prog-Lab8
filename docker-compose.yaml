@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile.server
+    container_name: lab_server
+    command: ["java", "-Djava.security.egd=file:/dev/./urandom", "-cp", "/laba/classes:/laba/lib/*", "com.example.Server.Server"]
+    ports:
+      - "12345:12345"
+    networks:
+      - lab_network
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
+
+  client:
+    build:
+      context: .
+      dockerfile: Dockerfile.client
+    container_name: lab_client_1
+    depends_on:
+      - server
+    networks:
+      - lab_network
+    stdin_open: true
+    tty: true
+
+networks:
+  lab_network:
+    driver: bridge

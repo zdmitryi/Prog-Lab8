@@ -1,0 +1,36 @@
+package com.example.Server.Commands;
+
+
+import com.example.Common.CommandResponse;
+import com.example.Common.Models.StudyGroup;
+import com.example.Server.Utilities.CollectionManager;
+import com.example.Server.Utilities.RepositoryManager;
+import com.example.Server.Utilities.WrapperForCollection;
+
+public class AddIfMinCommand extends Command {
+    private final CollectionManager collectionManager;
+    private final WrapperForCollection wrapper;
+    private final RepositoryManager repositoryManager;
+    @Override
+    public CommandResponse execute(String[] args, StudyGroup group, int ownerId){
+        group.setOwnerId(ownerId);
+        wrapper.sort();
+        if (group.compareTo(wrapper.getGroups().get(0)) < 0) {
+            try{
+                repositoryManager.insertGroup(group, ownerId);
+            } catch (RuntimeException e) {
+                return new CommandResponse(0, "Ошибка при вставки группы", false);
+            }
+            collectionManager.getCollection().add(group);
+            collectionManager.updateWrapper(group);
+            return new CommandResponse(0,"Группа успешно добавлена", true);
+        } else return new CommandResponse(0,"Группа не была добавлена", true);
+    }
+    public AddIfMinCommand(String name, String description, int amount, boolean needsObject, boolean needsFile, boolean needsOnlyAdmin, CollectionManager collectionManager, WrapperForCollection wrapper, RepositoryManager repositoryManager){
+        super(name, description, amount, needsObject, needsFile, needsOnlyAdmin);
+        this.collectionManager = collectionManager;
+        this.wrapper = wrapper;
+        this.repositoryManager = repositoryManager;
+        }
+
+}

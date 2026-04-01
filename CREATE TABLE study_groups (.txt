@@ -1,0 +1,27 @@
+CREATE TABLE study_groups (
+    owner_id INTEGER NOT NULL,
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    students_count BIGINT NOT NULL,
+    should_be_expelled INTEGER,
+    form_of_education VARCHAR(50),
+    semester VARCHAR(50),
+    creation_date DATE NOT NULL,
+    
+    
+    coord_x DOUBLE PRECISION NOT NULL,
+    coord_y BIGINT NOT NULL,
+    
+    admin_name VARCHAR(255) NOT NULL,
+    admin_weight DOUBLE PRECISION,
+    admin_eye_color VARCHAR(50),
+    admin_hair_color VARCHAR(50) NOT NULL,
+    admin_nationality VARCHAR(50) NOT NULL,
+    
+    admin_location_x BIGINT NOT NULL,
+    admin_location_y BIGINT NOT NULL,
+    admin_location_z BIGINT NOT NULL,
+    admin_location_name VARCHAR(255),
+    
+    FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE CASCADE
+);
