@@ -4,7 +4,7 @@ docker run -it --network="host" lab6-client
 docker run --network="host" -e FileNameForLab=FileForLab5 -p 12345:12345 lab6-server
 
 
-java "-Djava.util.logging.config.file=src/main/resources/logging.properties" -cp "target/classes;lib/*" com.example.Server.Server
+java "-Djava.util.logging.config.file=src/main/resources/logging.properties" -cp "target/classes;lib/*" com.example.server.Server
 
 
 

@@ -3,4 +3,4 @@ WORKDIR /laba
 COPY target/classes /laba/classes
 COPY target/lib /laba/lib
 COPY script.txt /laba/script.txt
-CMD ["java", "-cp", "/laba/classes:/laba/lib/*", "com.example.Client.Client"]
+CMD ["java", "-cp", "/laba/classes:/laba/lib/*", "com.example.client.Client"]

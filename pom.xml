@@ -5,6 +5,11 @@
          http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.lab</groupId>
+    <modules>
+        <module>src/main/java/com/example/client</module>
+        <module>src/main/java/com/example/server</module>
+        <module>src/main/java/com/example/common</module>
+    </modules>
     <artifactId>studygroup</artifactId>
     <version>1.0</version>
     <properties>
