@@ -1,0 +1,7 @@
+FROM eclipse-temurin:17-jdk-alpine
+WORKDIR /laba
+COPY client/target/classes /laba/classes
+COPY client/script.txt /laba/script.txt
+CMD ["java", \
+     "-cp", "/laba/classes:/laba/lib/*", \
+     "com.example.client.Client"]

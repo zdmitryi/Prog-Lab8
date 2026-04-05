@@ -1,0 +1,16 @@
+FROM eclipse-temurin:17-jre-alpine
+
+WORKDIR /laba
+
+COPY server/target/classes /laba/classes
+
+COPY server/target/lib /laba/lib
+
+COPY server/src/main/resources/db/migration/ /laba/db/migration/
+
+CMD ["java", \
+     "-Djava.security.egd=file:/dev/./urandom", \
+     "-Djava.util.logging.config.file=/laba/logging.properties", \
+     "-XX:+UseContainerSupport", \
+     "-cp", "/laba/classes:/laba/lib/*", \
+     "com.example.Server"]

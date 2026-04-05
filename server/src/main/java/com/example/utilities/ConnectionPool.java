@@ -1,6 +1,5 @@
 package com.example.utilities;
 
-import com.jcraft.jsch.JSchException;
 import java.sql.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -12,34 +11,26 @@ public class ConnectionPool implements AutoCloseable {
     private static final int size = 10;
 
     private final ArrayBlockingQueue<Connection> pool;
-    private SshTunnel tunnel;
-    private String url;
-    private final String user;
-    private final String password;
     private volatile boolean closed = false;
-
-    public ConnectionPool() {
-        this.user = "s502358";
-        this.password = "";
+    private static String url;
+    private static String user;
+    private static String password;
+    public ConnectionPool(String url, String user, String password) {
         this.pool = new ArrayBlockingQueue<>(size, true);
-
-        initialize();
+        this.url = url;
+        this.user = user;
+        this.password = password;
+        initialize(url, user, password);
     }
 
-    private void initialize() {
+    private void initialize(String url, String user, String password) {
         try {
-            this.tunnel = new SshTunnel(
-                    "se.ifmo.ru", 2222, user, "", "pg", 5432
-            );
-            this.url = "jdbc:postgresql://localhost:" + tunnel.getLocalPort() + "/studs";
-
             for (int i = 0; i < size; i++) {
                 Connection conn = createConnection();
                 pool.offer(conn);
             }
-
-        } catch (JSchException | SQLException e) {
-            throw new RuntimeException("Cannot initialize ConnectionPool", e);
+        } catch (SQLException e) {
+            throw new RuntimeException("Невозможно создать ConnectionPool", e);
         }
     }
 
@@ -50,7 +41,7 @@ public class ConnectionPool implements AutoCloseable {
 
     public Connection getConnection() throws SQLException {
         if (closed) {
-            throw new SQLException("ConnectionPool is closed");
+            throw new SQLException("ConnectionPool закрыт");
         }
 
         try {
@@ -60,7 +51,6 @@ public class ConnectionPool implements AutoCloseable {
                 throw new SQLException("Tаймаут ожидания пула");
             }
 
-            // Проверяем, живо ли соединение
             if (!conn.isValid(2)) {
                 logger.warning("Cоединение разорвано");
                 return createConnection();
@@ -87,7 +77,6 @@ public class ConnectionPool implements AutoCloseable {
             if (conn.isValid(2) && !conn.isClosed()) {
                 if (!conn.getAutoCommit()) conn.setAutoCommit(true);
                 try { conn.rollback(); } catch (SQLException ignored) {}
-
                 if (!pool.offer(conn, 2, TimeUnit.SECONDS)) {
                     logger.warning("Пул заполнен");
                     conn.close();
@@ -105,22 +94,10 @@ public class ConnectionPool implements AutoCloseable {
     @Override
     public void close() {
         closed = true;
-
         Connection conn;
         while ((conn = pool.poll()) != null) {
             try { conn.close(); } catch (SQLException ignored) {}
         }
-
-        // Закрываем SSH-туннель
-        if (tunnel != null) {
-            try { tunnel.close(); } catch (Exception e) {
-                logger.log(Level.WARNING, "Error closing tunnel", e);
-            }
-        }
-        logger.info("ConnectionPool closed");
-    }
-
-    public int getIdleCount() {
-        return pool.size();
+        logger.info("ConnectionPool закрыт");
     }
 }

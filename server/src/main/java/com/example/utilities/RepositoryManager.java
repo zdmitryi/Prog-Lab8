@@ -112,14 +112,15 @@ public class RepositoryManager {
         }
 
         String sql = "INSERT INTO users (login, password_hash) VALUES (?, ?) RETURNING id";
-
-        try (Connection connection = connectionPool.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
-
+        ResultSet resultSet = null;
+        Connection connection = null;
+        PreparedStatement statement = null;
+        try {
+            connection = connectionPool.getConnection();
+            statement = connection.prepareStatement(sql);
             statement.setString(1, login);
             statement.setString(2, hashPassword(password));
-
-            try (ResultSet resultSet = statement.executeQuery()) {
+                resultSet = statement.executeQuery();
                 if (resultSet.next()) {
                     logger.info("Пользователь создан: " + login);
                     return resultSet.getInt("id");
@@ -127,15 +128,21 @@ public class RepositoryManager {
                     logger.info("Пользователь уже существует: " + login);
                     return -1;
                 }
-            }
-
         } catch (SQLException e) {
-            if ("23505".equals(e.getSQLState())) {
-                logger.info("Дубликат login: " + login);
-                return -1;
-            }
             logger.log(Level.SEVERE, "Ошибка БД при вставке пользователя", e);
             throw new RuntimeException("Ошибка при вставке пользователя", e);
+        } finally {
+            try {
+                if (resultSet != null) resultSet.close();
+            } catch (SQLException e) {
+            }
+            try {
+                if (statement != null) statement.close();
+            } catch (SQLException e) {
+            }
+            if (connection != null) {
+                connectionPool.releaseConnection(connection);
+            }
         }
     }
 
@@ -326,10 +333,13 @@ public class RepositoryManager {
             resultSet = statement.executeQuery();
 
             if (resultSet.next()) {
+                System.out.println("Успешно получил пользователя");
                 return resultSet.getInt("id");
             }
+            System.out.println("Успешно создал пользователя");
             return -1;
         } catch (SQLException e) {
+            e.printStackTrace();
             throw new RuntimeException("Не удалось выполнить selectOwnerId");
         } finally {
             try { if (resultSet != null) resultSet.close(); } catch (SQLException e) {}

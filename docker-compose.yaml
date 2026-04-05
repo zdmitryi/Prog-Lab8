@@ -1,24 +1,34 @@
-version: '3.8'
-
 services:
   server:
     build:
       context: .
-      dockerfile: Dockerfile.server
+      dockerfile: server/Dockerfile.server
     container_name: lab_server
-    command: ["java", "-Djava.security.egd=file:/dev/./urandom", "-cp", "/laba/classes:/laba/lib/*", "com.example.Server.Server"]
     ports:
       - "12345:12345"
     networks:
       - lab_network
-    dns:
-      - 8.8.8.8
-      - 1.1.1.1
+    volumes:
+      - ./.env:/laba/.env:ro
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: studygroup_db
+    environment:
+      POSTGRES_DB: studygroup_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - lab_network
 
   client:
     build:
       context: .
-      dockerfile: Dockerfile.client
+      dockerfile: client/Dockerfile.client
     container_name: lab_client_1
     depends_on:
       - server
@@ -30,3 +40,6 @@ services:
 networks:
   lab_network:
     driver: bridge
+
+volumes:
+  postgres_data:

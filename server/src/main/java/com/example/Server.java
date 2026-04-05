@@ -9,15 +9,34 @@ import com.example.models.StudyGroup;
 import com.example.utilities.*;
 import com.example.commands.*;
 
+import java.nio.file.Files;
+import java.nio.file.Paths;
+
 
 
 public class Server {
     private static final Logger logger = Logger.getLogger(Server.class.getName());
     public static void main(String[] args) throws IOException{
         logger.info("Инициализация");
-        ConnectionPool connectionPool = new ConnectionPool();
+        String host = null;
+        String port = null;
+        String name = null;
+        String user = null;
+        String password = null;
+        String url = null;
+        for (String line : Files.readAllLines(Paths.get(".env"))) {
+            if (line.startsWith("DB_HOST=")) host = line.split("=", 2)[1];
+            if (line.startsWith("DB_PORT=")) port = line.split("=", 2)[1];
+            if (line.startsWith("DB_NAME=")) name = line.split("=", 2)[1];
+            if (line.startsWith("DB_USER=")) user = line.split("=", 2)[1];
+            if (line.startsWith("DB_PASSWORD=")) password = line.split("=", 2)[1];
+            if (line.startsWith("DB_URL=")) url = line.split("=",2)[1];
+        }
+        String urlFull = url + host + ":" + port + "/" + name;
+        DbMigration.migrate(urlFull, user, password);
+        ConnectionPool connectionPool = new ConnectionPool(urlFull, user, password);
         ThreadPoolManager threadPoolManager = new ThreadPoolManager();
-        ServerNetworkManager manager = new ServerNetworkManager(threadPoolManager, "server", 12345);
+        ServerNetworkManager manager = new ServerNetworkManager(threadPoolManager, "localhost", 12345);
         CommandManager commandManager = new CommandManager();
         CommandExecuter executer = new CommandExecuter(manager, commandManager, threadPoolManager);
         manager.setExecuter(executer);

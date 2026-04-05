@@ -83,7 +83,7 @@ public class ServerNetworkManager {
             System.out.println("Запуск сервера на порту: " + port);
             isRunning = true;
         } catch (Exception e) {
-            System.out.println("Ошибка: " + e.getClass().getSimpleName());
+            e.printStackTrace();
         }
     }
 
@@ -175,6 +175,7 @@ public class ServerNetworkManager {
                     state.ownerId = newOwnerId;
                     this.sendBoolean(flag, key);
                 } catch (RuntimeException e) {
+                    e.printStackTrace();
                     this.send(new CommandResponse(0, "Ошибка при работе с БД", false), key, 1);
                 }
             }
@@ -184,17 +185,16 @@ public class ServerNetworkManager {
                     return;
                 }
                 CompletableFuture
-                        .supplyAsync(() -> {System.out.println("Sending in thread: " + Thread.currentThread().getName());
+                        .supplyAsync(() -> {System.out.println("Послано в потоке: " + Thread.currentThread().getName());
                             return executer.executeCommand(request, state.ownerId);
                                 },
                                 threadPoolManager.getProcessPool())
 
                         .thenAcceptAsync(response -> {
                                 send(response, key, 1);
-
                         }, threadPoolManager.getResponsePool())
                         .exceptionally(ex -> {
-                            logger.log(Level.SEVERE, "Error", ex);
+                            logger.log(Level.WARNING, "Error", ex);
                             return null;
                         });
             }
@@ -253,7 +253,7 @@ public class ServerNetworkManager {
             }
 
             int dataLength = lenBuffer.flip().getInt();
-            if (dataLength <= 0 || dataLength > 10000000) {
+            if (dataLength <= 0 || dataLength > 100000) {
                 throw new IOException("Некорректная длина: " + dataLength);
             }
             ByteBuffer dataBuffer = ByteBuffer.allocate(dataLength);
@@ -328,7 +328,7 @@ public class ServerNetworkManager {
             while (buffer.hasRemaining()) {
                 int written = channel.write(buffer);
                 if (written == -1) throw new IOException("Closed");
-                if (written == 0) break;  // ← Добавить!
+                if (written == 0) break;
             }
 
             logger.info("Отправлен boolean: " + b);

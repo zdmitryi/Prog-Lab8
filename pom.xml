@@ -24,18 +24,22 @@
 
     <dependencyManagement>
         <dependencies>
-            <!-- Внешние зависимости -->
-            <dependency>
-                <groupId>com.jcraft</groupId>
-                <artifactId>jsch</artifactId>
-                <version>0.1.55</version>
-            </dependency>
             <dependency>
                 <groupId>org.postgresql</groupId>
                 <artifactId>postgresql</artifactId>
                 <version>42.7.10</version>
             </dependency>
-
+            <dependency>
+                <groupId>org.flywaydb</groupId>
+                <artifactId>flyway-core</artifactId>
+                <version>12.3.0</version>
+                <scope>compile</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.flywaydb</groupId>
+                <artifactId>flyway-database-postgresql</artifactId>
+                <version>10.15.0</version>
+            </dependency>
             <dependency>
                 <groupId>com.lab</groupId>
                 <artifactId>common</artifactId>
