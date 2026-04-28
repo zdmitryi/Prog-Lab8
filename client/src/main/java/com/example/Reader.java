@@ -450,6 +450,7 @@ public class Reader {
                     this.inConsole(true);
                     this.setScanner(new Scanner(System.in));
                     } catch (FileNotFoundException e) {
+                        e.printStackTrace();
                         this.inConsole(false);
                         this.setScanner(new Scanner(System.in));
                     }

@@ -34,7 +34,6 @@ public class ServerNetworkManager {
     private Selector selector;
     private boolean isRunning = true;
     private RepositoryManager repositoryManager;
-
     private static class ClientState {
         int ownerId;
         Queue<CommandResponse> responseQueue = new ConcurrentLinkedQueue<>();
@@ -233,6 +232,7 @@ public class ServerNetworkManager {
     }
     public void close(){
         try {
+            threadPoolManager.shutdown();
             isRunning = false;
             this.serverChannel.close();
         } catch (IOException e){

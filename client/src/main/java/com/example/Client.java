@@ -1,8 +1,7 @@
 package com.example;
-
 import java.io.IOException;
 public class Client {
-    public static void main(String[] args) throws IOException, InterruptedException, ClassNotFoundException {
+    public static void main(String[] args)  throws IOException, InterruptedException, ClassNotFoundException {
         int counterOfConnection = 0;
         ClientNetworkManager manager = new ClientNetworkManager("localhost", 12345);
         CommandValidator validator = new CommandValidator(manager);

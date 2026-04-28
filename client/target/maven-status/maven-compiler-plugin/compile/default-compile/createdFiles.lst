@@ -1,0 +1,11 @@
+com\example\Client.class
+com\example\StudyGroupParser.class
+com\example\ClientNetworkManager.class
+com\example\CommandValidator.class
+com\example\LocalizationManager.class
+com\example\Reader.class
+com\example\gui\dto\UserInfoDto.class
+com\example\JavaFXClient.class
+com\example\StudyGroupDto.class
+com\example\MainWindow.class
+com\example\AuthWindow.class
