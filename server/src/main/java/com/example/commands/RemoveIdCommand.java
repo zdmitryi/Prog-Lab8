@@ -22,11 +22,13 @@ public class RemoveIdCommand extends Command{
         } catch (ArrayIndexOutOfBoundsException  | NumberFormatException e) {
             return new CommandResponse(0,"Некорректный ввод аргументов", false);
         }
-
+        System.out.println("Removing id: " + id + " by owner: " + ownerId);
+        System.out.println(group);
         try {
-            repositoryManager.deleteGroup(group.getId(), ownerId);
+            repositoryManager.deleteGroup(id, ownerId);
         } catch (RuntimeException e){
-            return new CommandResponse(0, "Ошика при удалении группы", false);
+            e.printStackTrace();
+            return new CommandResponse(0, "Ошибка при удалении группы", false);
         }
         Set<StudyGroup> collection = collectionManager.getCollection();
         Stream<StudyGroup> groupStream = collection.stream();

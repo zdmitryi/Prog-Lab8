@@ -23,11 +23,11 @@ public class UpdateIdCommand extends Command{
         } catch (ArrayIndexOutOfBoundsException  | NumberFormatException e) {
             return new CommandResponse(0,"Некорректный ввод аргументов", false);
         }
-
+        System.out.println("Updating id: " + id + " by owner: " + ownerId);
         try {
-            repositoryManager.deleteGroup(group.getId(), ownerId);
-            repositoryManager.insertGroup(group, ownerId);
+            repositoryManager.updateGroup(id, group, ownerId);
         } catch (RuntimeException e) {
+            e.printStackTrace();
             return new CommandResponse(0,"Ошибка при обновлении группы", false);
         }
 
@@ -37,8 +37,9 @@ public class UpdateIdCommand extends Command{
                                               .filter(g -> g.getId() == id && g.getOwnerId() == ownerId)
                                               .findAny();
         if (toUpdate.isPresent()) {
-            collection.remove(toUpdate);
-            collectionManager.getWrapper().getGroups().remove(toUpdate);
+            StudyGroup old = toUpdate.get();
+            collectionManager.getWrapper().getGroups().remove(old);
+            collection.remove(old);
             group.setId(id);
             collectionManager.getWrapper().getGroups().add(group);
             collection.add(group);

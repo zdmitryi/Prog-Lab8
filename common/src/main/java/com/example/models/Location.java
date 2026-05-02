@@ -83,10 +83,9 @@ public class Location implements Serializable{
      * @return int
      */
     @Override
-    public int hashCode(){
-        return Objects.hash(this.getX(),this.getY(),this.getZ()) + this.getName().hashCode();
+    public int hashCode() {
+        return Objects.hash(x, y, z, name);
     }
-
     /** 
      * @param o
      * @return boolean

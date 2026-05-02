@@ -172,7 +172,7 @@ public class ServerNetworkManager {
                         newOwnerId = repositoryManager.selectOwnerId(request.login(), request.password());
                     }
                     state.ownerId = newOwnerId;
-                    this.sendBoolean(flag, key);
+                    this.sendAuthResponse(flag, newOwnerId, key);
                 } catch (RuntimeException e) {
                     e.printStackTrace();
                     this.send(new CommandResponse(0, "Ошибка при работе с БД", false), key, 1);
@@ -190,7 +190,11 @@ public class ServerNetworkManager {
                                 threadPoolManager.getProcessPool())
 
                         .thenAcceptAsync(response -> {
+                            if (response != null) {
                                 send(response, key, 1);
+                            } else {
+                                System.out.println("Response is null!");
+                            }
                         }, threadPoolManager.getResponsePool())
                         .exceptionally(ex -> {
                             logger.log(Level.WARNING, "Error", ex);
@@ -270,49 +274,6 @@ public class ServerNetworkManager {
         }
         }
     public void send(CommandResponse response, SelectionKey key, int attempt) {
-        Object state = key.attachment();
-        System.out.println(state);
-        if (!key.isValid()) {
-            return;
-        }
-        SocketChannel channel = (SocketChannel) key.channel();
-        if (channel == null || !channel.isOpen()) {
-            key.cancel();
-            return;
-        }
-        try {
-
-            byte[] data = response.serialize();
-            ByteBuffer buffer = ByteBuffer.allocate(4 + data.length);
-            buffer.putInt(data.length);
-            buffer.put(data);
-            buffer.flip();
-            int totalWritten = 0;
-            while (buffer.hasRemaining()) {
-                int written = channel.write(buffer);
-
-                if (written == -1) {
-                    throw new IOException("Channel closed");
-                }
-
-                if (written == 0) {
-                    break;
-                }
-
-                totalWritten += written;
-            }
-
-            logger.info("Отправлен: " + totalWritten + " байт");
-
-        } catch (Exception e) {
-            logger.log(Level.WARNING, "Ошибка отправки: " + e.getMessage());
-            key.cancel();
-            try { channel.close(); } catch (IOException ignored) {}
-        }
-    }
-
-
-    public void sendBoolean(boolean b, SelectionKey key) {
         if (!key.isValid()) return;
 
         SocketChannel channel = (SocketChannel) key.channel();
@@ -322,20 +283,43 @@ public class ServerNetworkManager {
         }
 
         try {
-            byte[] data = new byte[]{(byte) (b ? 1 : 0)};
-            ByteBuffer buffer = ByteBuffer.wrap(data);
+            byte[] data = response.serialize();
+            ByteBuffer buffer = ByteBuffer.allocate(4 + data.length);
+            buffer.putInt(data.length);
+            buffer.put(data);
+            buffer.flip();
 
+            int totalWritten = 0;
             while (buffer.hasRemaining()) {
                 int written = channel.write(buffer);
-                if (written == -1) throw new IOException("Closed");
-                if (written == 0) break;
+                if (written == -1) {
+                    throw new IOException("Channel closed");
+                }
+                if (written == 0) {
+                    break;
+                }
+                totalWritten += written;
             }
 
-            logger.info("Отправлен boolean: " + b);
+            logger.info("Отправлен: " + totalWritten + " байт");
 
         } catch (Exception e) {
-            logger.log(Level.WARNING, "Ошибка sendBoolean", e);
+            logger.log(Level.WARNING, "Ошибка отправки: " + e.getMessage());
+            e.printStackTrace();
             key.cancel();
+            try { channel.close(); } catch (IOException ignored) {}
+        }
+    }
+
+    public void sendAuthResponse(boolean exists, int ownerId, SelectionKey key) throws IOException {
+        SocketChannel channel = (SocketChannel) key.channel();
+        ByteBuffer buffer = ByteBuffer.allocate(5);
+        buffer.put((byte) (exists ? 1 : 0));
+        buffer.putInt(ownerId);
+        buffer.flip();
+
+        while (buffer.hasRemaining()) {
+            channel.write(buffer);
         }
     }
 

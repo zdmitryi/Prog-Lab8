@@ -56,7 +56,7 @@ public class Coordinates implements Serializable {
      */
     @Override
     public String toString(){
-        return "Координата по X: " + this.x + "\n" + "Координата по Y " + this.y;
+        return "Координата по X: " + this.x + "\n" + "Координата по Y:  " + this.y;
     }
     /** 
      * @param o

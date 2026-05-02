@@ -29,10 +29,15 @@ public class RepositoryManager {
             connection = connectionPool.getConnection();
             statement = connection.prepareStatement(sql);
             statement.setInt(1, id);
+            statement.setInt(2, ownerID);
             resultSet = statement.executeQuery();
-            if (!resultSet.next()) throw new RuntimeException("Нет доступа к данным");
+            System.out.println(resultSet);
+            if (!resultSet.next()){
+                throw new RuntimeException("Нет доступа к данным");
+            }
 
         } catch (SQLException e) {
+            e.printStackTrace();
             throw new RuntimeException(e);
         } finally {
             try {
@@ -64,20 +69,42 @@ public class RepositoryManager {
             statement.setDouble(9, group.getCoordinates().getY());
             Person admin = group.getGroupAdmin();
             statement.setString(10, admin.getName());
-            statement.setDouble(11, admin.getWeight());
-            statement.setString(12, admin.getEyeColor().toString());
+
+            Double weight = admin.getWeight();
+            if (weight != null) {
+                statement.setDouble(11, weight);
+            } else {
+                statement.setNull(11, java.sql.Types.DOUBLE);
+            }
+
+            Color eyeColor = admin.getEyeColor();
+            if (eyeColor != null) {
+                statement.setString(12, eyeColor.toString());
+            } else {
+                statement.setNull(12, java.sql.Types.VARCHAR);
+            }
+
             statement.setString(13, admin.getHairColor().toString());
             statement.setString(14, admin.getNationality().toString());
+
             Location location = admin.getLocation();
             statement.setLong(15, location.getX());
             statement.setLong(16, location.getY());
             statement.setLong(17, location.getZ());
-            statement.setString(18, location.getName());
+
+            String locName = location.getName();
+            if (locName != null) {
+                statement.setString(18, locName);
+            } else {
+                statement.setNull(18, java.sql.Types.VARCHAR);
+            }
             resultSet = statement.executeQuery();
             if (resultSet.next()) {
                 group.setId(resultSet.getInt(1));
             }
-        } catch (SQLException e){ throw new RuntimeException(e);
+        } catch (SQLException e){
+            e.printStackTrace();
+            throw new RuntimeException(e);
         } finally {
             try {
                 if (resultSet != null) resultSet.close();
@@ -277,6 +304,67 @@ public class RepositoryManager {
             return 0;
         } catch (SQLException e){
             throw new RuntimeException("Не удалось выполнить countLessThanGroupAdmin");
+        } finally {
+            try { if (statement != null) statement.close(); } catch (SQLException e) {}
+            if (connection != null) connectionPool.releaseConnection(connection);
+        }
+    }
+
+    public void updateGroup(int id, StudyGroup group, int ownerId) {
+        String sql = "UPDATE study_groups SET name=?, students_count=?, should_be_expelled=?, form_of_education=?, semester=?, coord_x=?, coord_y=?, admin_name=?, admin_weight=?, admin_eye_color=?, admin_hair_color=?, admin_nationality=?, admin_location_x=?, admin_location_y=?, admin_location_z=?, admin_location_name=? WHERE id=? AND owner_id=?";
+
+        Connection connection = null;
+        PreparedStatement statement = null;
+
+        try {
+            connection = connectionPool.getConnection();
+            statement = connection.prepareStatement(sql);
+
+            statement.setString(1, group.getName());
+            statement.setLong(2, group.getStudentsCount());
+            statement.setInt(3, group.getShouldBeExpelled());
+            statement.setString(4, group.getFormOfEducation().toString());
+            statement.setString(5, group.getSemester().toString());
+            statement.setDouble(6, group.getCoordinates().getX());
+            statement.setDouble(7, group.getCoordinates().getY());
+
+            Person admin = group.getGroupAdmin();
+            statement.setString(8, admin.getName());
+
+            if (admin.getWeight() != null) {
+                statement.setDouble(9, admin.getWeight());
+            } else {
+                statement.setNull(9, java.sql.Types.DOUBLE);
+            }
+
+            if (admin.getEyeColor() != null) {
+                statement.setString(10, admin.getEyeColor().toString());
+            } else {
+                statement.setNull(10, java.sql.Types.VARCHAR);
+            }
+
+            statement.setString(11, admin.getHairColor().toString());
+            statement.setString(12, admin.getNationality().toString());
+            statement.setLong(13, admin.getLocation().getX());
+            statement.setLong(14, admin.getLocation().getY());
+            statement.setLong(15, admin.getLocation().getZ());
+
+            if (admin.getLocation().getName() != null) {
+                statement.setString(16, admin.getLocation().getName());
+            } else {
+                statement.setNull(16, java.sql.Types.VARCHAR);
+            }
+
+            statement.setInt(17, id);
+            statement.setInt(18, ownerId);
+
+            int updated = statement.executeUpdate();
+            if (updated == 0) {
+                throw new RuntimeException("Объект не найден или нет доступа");
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
         } finally {
             try { if (statement != null) statement.close(); } catch (SQLException e) {}
             if (connection != null) connectionPool.releaseConnection(connection);

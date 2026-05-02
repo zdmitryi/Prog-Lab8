@@ -155,8 +155,11 @@ public class StudyGroup implements Comparable<StudyGroup>, Serializable{
      * @return String
      */
     @Override
-    public String toString(){
-        return "ID группы: " + this.id + "\n" + "Название группы: " + this.name + "\n" +  "Координаты группы: "+ "\n" + this.coordinates + "\n" + "Количество студентов в группе: " + this.studentsCount + "\n" + "Количество студентов на отчисление: " + this.shouldBeExpelled + "\n" + "Дата создания группы: " + this.creationDate + "\n" + "Форма обучения: " + this.formOfEducation + "\n" + "Семестр: " + this.semesterEnum + "\n" + "Староста группы: " + "\n" + this.getGroupAdmin() + "\n" + "ID владельца группы:" + this.ownerId + "\n";
+    public String toString() {
+        return String.format("ID:%d|Name:%s|X:%.1f|Y:%d|Students:%d|Expelled:%d|Form:%s|Sem:%s|Admin:%s|Owner:%d",
+                id, name, coordinates.getX(), coordinates.getY(),
+                studentsCount, shouldBeExpelled, formOfEducation, semesterEnum,
+                groupAdmin.getName(), ownerId);
     }
 
     public StudyGroup(){};

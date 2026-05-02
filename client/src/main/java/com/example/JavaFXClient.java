@@ -2,12 +2,15 @@ package com.example;
 
 import javafx.application.Application;
 import javafx.stage.Stage;
+
+import java.io.IOException;
+
 public class JavaFXClient extends Application {
     public static void main(String[] args) {
         launch(args);
     }
     @Override
-    public void start(Stage primaryStage) {
+    public void start(Stage primaryStage) throws IOException, ClassNotFoundException {
         ClientNetworkManager networkManager = new ClientNetworkManager("localhost", 12345);
         LocalizationManager localizationManager = new LocalizationManager();
         try {
@@ -21,7 +24,8 @@ public class JavaFXClient extends Application {
         if (authorized) {
             String login = authWindow.getLogin();
             String password = authWindow.getPassword();
-            int userId = 1;
+            MainWindow mainWindow = new MainWindow(login, networkManager, password, authWindow.getOwnerId());
+            mainWindow.show();
         } else {
             System.out.println("Авторизация не удалась");
             System.exit(0);

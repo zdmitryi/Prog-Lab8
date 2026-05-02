@@ -21,6 +21,7 @@ public class AuthWindow {
     private PasswordField passwordField;
     private String login;
     private String password;
+    private int ownerId;
     private boolean authorized = false;
     public AuthWindow(ClientNetworkManager networkManager, LocalizationManager localizationManager) {
         this.networkManager = networkManager;
@@ -28,6 +29,11 @@ public class AuthWindow {
         this.stage = new Stage();
         createWindow();
     }
+
+    public int getOwnerId() {
+        return ownerId;
+    }
+
     public boolean isAuthorized() {
         return authorized;
     }
@@ -126,8 +132,9 @@ public class AuthWindow {
                         new String[0], null
                 );
                 networkManager.sendAuthorizationInfo(request);
-                boolean userExists = networkManager.receiveAuthorizationResponse();
-
+                ClientNetworkManager.AuthResponse response = networkManager.receiveAuthResponse();
+                boolean userExists = response.isExists();
+                ownerId = response.getOwnerId();
                 javafx.application.Platform.runLater(() -> {
                     if (isLogin) {
                         if (userExists) {

@@ -29,6 +29,12 @@ public class Reader {
         this.validator = validator;
         this.manager = manager;
     }
+    public Reader(CommandValidator validator, ClientNetworkManager manager, String login, String password) {
+        this.validator = validator;
+        this.manager = manager;
+        this.login = login;
+        this.password = password;
+    }
     public boolean isInConsole() {
         return this.isInConsole;
     }
@@ -503,7 +509,11 @@ public class Reader {
                 }
         }
     }
+
+    public Scanner getScanner() {
+        return this.scanner;
     }
+}
 
 
 

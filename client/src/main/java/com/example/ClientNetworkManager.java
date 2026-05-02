@@ -15,6 +15,8 @@ public class ClientNetworkManager {
     private final int port;
     private final String serverHost;
     private boolean isRunning = true;
+    private final Object sendLock = new Object();
+    private final Object receiveLock = new Object();
 
     public ClientNetworkManager(String serverHost, int port) {
         this.serverHost = serverHost;
@@ -28,7 +30,7 @@ public class ClientNetworkManager {
     public void connect() {
         try {
             this.socket = new Socket(serverHost, port);
-            socket.setSoTimeout(10000);
+            socket.setSoTimeout(60000);
             System.out.println("Подключение к серверу " + serverHost + ":" + port);
         } catch (IOException e) {
             System.out.println("Ошибка при открытии соединения.");
@@ -59,30 +61,57 @@ public class ClientNetworkManager {
 
 
     public void send(CommandRequest r) throws IOException {
-        byte[] data = r.serialize();
-        ByteBuffer buffer = ByteBuffer.allocate(4 + data.length);
-        buffer.putInt(data.length);
-        buffer.put(data);
-        buffer.flip();
-        byte[] toSend = new byte[buffer.remaining()];
-        buffer.get(toSend);
-        socket.getOutputStream().write(toSend);
-        socket.getOutputStream().flush();
+        synchronized (sendLock) {
+            byte[] data = r.serialize();
+            ByteBuffer buffer = ByteBuffer.allocate(4 + data.length);
+            buffer.putInt(data.length);
+            buffer.put(data);
+            buffer.flip();
+            byte[] toSend = new byte[buffer.remaining()];
+            buffer.get(toSend);
+            socket.getOutputStream().write(toSend);
+            socket.getOutputStream().flush();
+        }
     }
 
-    public boolean receiveAuthorizationResponse() throws IOException, ClassNotFoundException {
-        byte[] data = new byte[1];
+    public class AuthResponse {
+        public boolean exists;
+        public int ownerId;
+
+        public boolean isExists() {
+            return exists;
+        }
+
+        public int getOwnerId() {
+            return ownerId;
+        }
+    }
+
+    public AuthResponse receiveAuthResponse() throws IOException {
+        byte[] data = new byte[5];
         readFully(data);
-        return data[0] == 1;
+
+        AuthResponse response = new AuthResponse();
+        response.exists = data[0] == 1;
+        response.ownerId = ByteBuffer.wrap(data, 1, 4).getInt();
+
+        return response;
+    }
+    public int receiveOwnerId() throws IOException, ClassNotFoundException {
+        byte[] data = new byte[4];
+        readFully(data);
+        return ByteBuffer.wrap(data).getInt();
     }
 
     public CommandResponse receive() throws IOException, ClassNotFoundException {
-        byte[] lenBytes = new byte[4];
-        readFully(lenBytes);
-        int dataLength = ByteBuffer.wrap(lenBytes).getInt();
-        byte[] data = new byte[dataLength];
-        readFully(data);
-        return (CommandResponse) deserializeObject(data);
+        synchronized (receiveLock) {
+            byte[] lenBytes = new byte[4];
+            readFully(lenBytes);
+            int dataLength = ByteBuffer.wrap(lenBytes).getInt();
+            byte[] data = new byte[dataLength];
+            readFully(data);
+            return (CommandResponse) deserializeObject(data);
+        }
     }
 
     private void readFully(byte[] buffer) throws IOException {

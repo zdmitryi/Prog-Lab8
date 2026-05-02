@@ -12,7 +12,7 @@ public class Client {
         try {
             reader.readAuthorizationInfo();
             manager.sendAuthorizationInfo(new CommandRequest(reader.getLogin(), reader.getPassword(), 0, "AUTHORIZATION_INFO", new String[0], null));
-            isAuthorized = manager.receiveAuthorizationResponse();
+            isAuthorized = manager.receiveAuthResponse().isExists();
         } catch (Exception e){
             System.out.println(e);
             return;
