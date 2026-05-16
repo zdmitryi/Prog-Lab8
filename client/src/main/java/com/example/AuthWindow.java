@@ -173,5 +173,4 @@ public class AuthWindow {
         stage.showAndWait();
         return authorized;
     }
-
 }

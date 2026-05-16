@@ -11,9 +11,6 @@ import javafx.collections.transformation.FilteredList;
 import java.util.stream.*;
 
 import java.util.*;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 public class DataService {
@@ -23,22 +20,17 @@ public class DataService {
     private final String password;
     private final int ownerId;
 
-    // Данные
     private final ObservableList<StudyGroupDto> masterData;
     private final FilteredList<StudyGroupDto> filteredData;
     private Consumer<Boolean> onLoadingChanged;
 
-    // Автообновление
-    private ScheduledExecutorService refreshService;
     private long requestId = 1;
     private volatile boolean refreshing = false;
 
-    // Колбэки для обновления UI
-    private Consumer<Integer> onTotalCountChanged;   // всего объектов
-    private Consumer<Integer> onMyCountChanged;      // моих объектов
-    private Consumer<String> onError;                 // ошибка
-    private Consumer<String> onCommandResult;         // результат команды
-    private Runnable onDataChanged;                   // данные изменились
+    private Consumer<Integer> onTotalCountChanged;
+    private Consumer<Integer> onMyCountChanged;
+    private Consumer<String> onError;
+    private Consumer<String> onCommandResult;
 
     public DataService(ClientNetworkManager networkManager, String login,
                        String password, int ownerId) {
@@ -51,14 +43,6 @@ public class DataService {
         this.filteredData = new FilteredList<>(masterData, p -> true);
     }
 
-    // ============================================
-    // ГЕТТЕРЫ ДАННЫХ
-    // ============================================
-
-
-    public void setOnLoadingChanged(Consumer<Boolean> callback) {
-        this.onLoadingChanged = callback;
-    }
     public ObservableList<StudyGroupDto> getMasterData() {
         return masterData;
     }
@@ -75,9 +59,6 @@ public class DataService {
         return login;
     }
 
-    // ============================================
-    // КОЛБЭКИ ДЛЯ UI
-    // ============================================
     public void setOnTotalCountChanged(Consumer<Integer> callback) {
         this.onTotalCountChanged = callback;
     }
@@ -94,34 +75,17 @@ public class DataService {
         this.onCommandResult = callback;
     }
 
-    public void setOnDataChanged(Runnable callback) {
-        this.onDataChanged = callback;
+    private Consumer<String> onHistoryResult;
+
+    public void setOnHistoryResult(Consumer<String> callback) {
+        this.onHistoryResult = callback;
     }
 
-    // ============================================
-    // АВТООБНОВЛЕНИЕ
-    // ============================================
-    public void startAutoRefresh(int intervalSeconds) {
-        stopAutoRefresh();
-        refreshService = Executors.newSingleThreadScheduledExecutor();
-        refreshService.scheduleAtFixedRate(this::refreshData, 0, intervalSeconds, TimeUnit.SECONDS);
-    }
-
-    public void stopAutoRefresh() {
-        if (refreshService != null && !refreshService.isShutdown()) {
-            refreshService.shutdown();
-        }
-    }
-
-    // ============================================
-    // ЗАГРУЗКА ДАННЫХ
-    // ============================================
     public void refreshData() {
         if (refreshing) return;
         refreshing = true;
 
         Platform.runLater(() -> {
-            if (onLoadingChanged != null) onLoadingChanged.accept(true);
         });
 
         new Thread(() -> {
@@ -132,28 +96,21 @@ public class DataService {
                 CommandResponse response = networkManager.receive();
 
                 if (response.isSuccessful() && response.answer() != null) {
-                    // Парсим в ЭТОМ же фоновом потоке!
                     List<StudyGroupDto> parsedData = parseData(response.answer());
-
-                    // В UI-потоке только обновляем таблицу
                     Platform.runLater(() -> {
                         masterData.setAll(parsedData);
                         updateStats();
-                        if (onDataChanged != null) onDataChanged.run();
                         refreshing = false;
-                        if (onLoadingChanged != null) onLoadingChanged.accept(false);
                     });
                 } else {
                     Platform.runLater(() -> {
                         refreshing = false;
-                        if (onLoadingChanged != null) onLoadingChanged.accept(false);
                     });
                 }
             } catch (Exception e) {
                 Platform.runLater(() -> {
                     refreshing = false;
-                    if (onLoadingChanged != null) onLoadingChanged.accept(false);
-                    if (onError != null) onError.accept("Ошибка: " + e.getMessage());
+                    if (onError != null) onError.accept("Error: " + e.getMessage());
                 });
             }
         }).start();
@@ -168,8 +125,8 @@ public class DataService {
                 if (!part.trim().isEmpty()) groupStrings.add(part.trim());
             }
         } else {
-            for (String part : answer.split("ID группы:")) {
-                if (!part.trim().isEmpty()) groupStrings.add("ID группы:" + part.trim());
+            for (String part : answer.split("Group ID:")) {
+                if (!part.trim().isEmpty()) groupStrings.add("Group ID:" + part.trim());
             }
         }
 
@@ -198,9 +155,6 @@ public class DataService {
         }
     }
 
-    // ============================================
-    // ВЫПОЛНЕНИЕ КОМАНД
-    // ============================================
     public void executeCommand(String cmd, String[] args, StudyGroup group) {
         new Thread(() -> {
             try {
@@ -212,8 +166,8 @@ public class DataService {
                 Platform.runLater(() -> {
                     if (onCommandResult != null) {
                         String msg = response.answer();
-                        if (msg != null && msg.length() > 200) {
-                            msg = "Команда выполнена успешно";
+                        if (msg != null && msg.length() > 200 && !cmd.equals("help")) {
+                            msg = "Command executed successfully";
                         }
                         onCommandResult.accept(msg);
                     }
@@ -223,10 +177,16 @@ public class DataService {
                                 cmd.equals("addIfMin") || cmd.equals("removeGreater")) {
                             new Thread(() -> {
                                 try {
-                                    Thread.sleep(1000);  // Ждём в ФОНОВОМ потоке
+                                    Thread.sleep(1000);
                                 } catch (InterruptedException ex) {}
                                 refreshData();
                             }).start();
+                        }
+                        if (onCommandResult != null && !cmd.equals("history")) {
+                            onCommandResult.accept(response.answer());
+                        }
+                        if (response.isSuccessful()) {
+                            refreshHistory();
                         }
                     }
                 });
@@ -240,28 +200,24 @@ public class DataService {
         }).start();
     }
 
-    // ============================================
-    // ФИЛЬТРАЦИЯ
-    // ============================================
-    public void applyFilter(String text) {
-        if (text == null || text.isEmpty()) {
-            filteredData.setPredicate(dto -> true);
-        } else {
-            String lower = text.toLowerCase();
-            filteredData.setPredicate(dto ->
-                    dto.getName().toLowerCase().contains(lower) ||
-                            dto.getAdminName().toLowerCase().contains(lower) ||
-                            String.valueOf(dto.getId()).contains(lower));
-        }
+    private void refreshHistory() {
+        new Thread(() -> {
+            try {
+                CommandRequest request = new CommandRequest(login, password, requestId++,
+                        "history", new String[0], null);
+                networkManager.send(request);
+                CommandResponse response = networkManager.receive();
+
+                if (onHistoryResult != null) {
+                    Platform.runLater(() -> onHistoryResult.accept(response.answer()));
+                }
+            } catch (Exception e) {
+            }
+        }).start();
     }
 
-    // ============================================
-    // ПАРСЕР
-    // ============================================
     private StudyGroup parseGroup(String str) {
         try {
-            // Формат: ID:1|Name:Group1|X:5.0|Y:10|Students:20|Expelled:3|Form:FULL_TIME_EDUCATION|Sem:FIFTH|Admin:John|Owner:1
-
             String[] parts = str.split("\\|");
 
             int id = 0;
@@ -278,7 +234,6 @@ public class DataService {
             for (String part : parts) {
                 String[] kv = part.split(":", 2);
                 if (kv.length != 2) continue;
-
                 String key = kv[0].trim();
                 String value = kv[1].trim();
 

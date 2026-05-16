@@ -12,7 +12,7 @@ services:
       - ./.env:/laba/.env:ro
 
   postgres:
-    image: postgres:15-alpine
+    image: postgres:16-alpine
     container_name: studygroup_db
     environment:
       POSTGRES_DB: studygroup_db

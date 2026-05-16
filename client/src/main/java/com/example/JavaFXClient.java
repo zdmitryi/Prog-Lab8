@@ -24,7 +24,8 @@ public class JavaFXClient extends Application {
         if (authorized) {
             String login = authWindow.getLogin();
             String password = authWindow.getPassword();
-            MainWindow mainWindow = new MainWindow(login, networkManager, password, authWindow.getOwnerId());
+            int ownerId = authWindow.getOwnerId();
+            MainWindow mainWindow = new MainWindow(login, networkManager, password, ownerId);
             mainWindow.show();
         } else {
             System.out.println("Авторизация не удалась");
